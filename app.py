@@ -10,7 +10,7 @@ from werkzeug.utils import secure_filename
 import tempfile
 import uuid
 import threading
-import time
+# import time # No longer needed if cleanup thread is removed
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # Required for flash messages
@@ -23,9 +23,11 @@ def internal_server_error(e):
     # Try to extract a more specific error message if possible
     error_message = "An unexpected error occurred on the server."
     if hasattr(e, 'original_exception') and e.original_exception:
-        # If it's a werkzeug exception wrapper, get the original exception
         original_e = e.original_exception
-        if hasattr(original_e, 'response') and hasattr(original_e.response, 'text'):
+        # Handle MistralClient errors specifically
+        if isinstance(original_e, Exception):
+            error_message = f"Mistral API Error: {str(original_e)}"
+        elif hasattr(original_e, 'response') and hasattr(original_e.response, 'text'):
             try:
                 error_details = json.loads(original_e.response.text)
                 if 'message' in error_details:
@@ -60,31 +62,28 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def delete_old_files():
-    # This scheduled cleanup might not be effective in a serverless environment
-    # as instances are ephemeral. Consider other cleanup strategies if needed.
-    print("[INFO] Running scheduled file cleanup...")
+    # In a serverless environment, instances are ephemeral, so this scheduled cleanup
+    # will not be effective as a continuously running thread. Files in /tmp are
+    # automatically cleaned up by the serverless platform. Manual deletion via UI
+    # or re-uploading will handle most cases.
+    print("[INFO] Manual file cleanup triggered...") # Changed message
     for folder in [app.config['UPLOAD_FOLDER'], app.config['OUTPUT_FOLDER']]:
-        # Ensure the directory exists before listing to avoid errors
         if not os.path.exists(folder):
-            os.makedirs(folder, exist_ok=True)
-            continue # Skip if just created, no files to delete yet
+            os.makedirs(folder, exist_ok=True) # Ensure dir exists for listing
+            continue 
 
         for filename in os.listdir(folder):
-            filepath = os.path.join(folder, filename)
+            filepath = os.path.join(folder, filename);
             if os.path.isfile(filepath):
-                # Delete files older than 24 hours
-                if (time.time() - os.path.getmtime(filepath)) > 24 * 3600:
+                # Delete files older than 24 hours (or any old files for manual cleanup)
+                # For serverless, file system is often purged between invocations,
+                # so this check is mostly relevant for local testing or explicit cleanup.
+                if (time.time() - os.path.getmtime(filepath)) > 24 * 3600: # Removed while True loop
                     try:
                         os.remove(filepath)
                         print(f"[INFO] Deleted old file: {filepath}")
                     except Exception as e:
                         print(f"[ERROR] Error deleting file {filepath}: {e}")
-
-# The cleanup thread will run only as long as the serverless instance is active,
-# which might be very short. Manual deletion or re-uploading will handle most cases.
-cleanup_thread = threading.Thread(target=delete_old_files)
-cleanup_thread.daemon = True # Allows the main program to exit even if this thread is running
-cleanup_thread.start()
 
 def extract_text_from_pdf(filepath: str) -> str:
     """
@@ -106,8 +105,7 @@ def extract_text_from_pdf(filepath: str) -> str:
 
 def convert_resume_to_json(pdf_text: str, api_key: str) -> str:
     """
-    Sends extracted PDF text to Mistral, requesting structured JSON.
-    Tries different models if rate limit is hit.
+    Converts resume text to JSON using Mistral.
     """
     client = MistralClient(api_key=api_key)
 
@@ -118,13 +116,6 @@ def convert_resume_to_json(pdf_text: str, api_key: str) -> str:
     ]
 
     messages = [
-        ChatMessage(
-            role="system",
-            content=(
-                "You are a helpful assistant that converts resume text into structured JSON. "
-                "Return ONLY the JSON object—no code blocks, no extra commentary."
-            )
-        ),
         ChatMessage(
             role="user",
             content=f"""
@@ -157,7 +148,6 @@ Return ONLY the JSON object, with no code fences or explanations.
         )
     ]
 
-    last_error = None
     for model in models:
         try:
             print(f"[INFO] Trying model: {model}")
@@ -174,17 +164,17 @@ Return ONLY the JSON object, with no code fences or explanations.
                 last_delim = generated_text.rfind("```")
                 generated_text = generated_text[first_delim:last_delim].strip()
 
+            # Validate JSON before returning
+            json.loads(generated_text) # Will raise ValueError if not valid JSON
             return generated_text
 
         except Exception as e:
-            last_error = e
             print(f"[WARNING] Failed with model {model}: {str(e)}")
+            # If all models fail, an error will be raised by the calling function.
+            # We just want to log here and continue trying other models.
             continue
 
-    if last_error:
-        raise last_error
-    else:
-        raise Exception("All models failed without specific error")
+    raise Exception("All Mistral models failed to convert resume to JSON or returned invalid JSON.")
 
 def convert_json_and_template_to_latex(json_data: dict, template_str: str, api_key: str) -> str:
     """
@@ -230,7 +220,6 @@ Requirements:
         )
     ]
 
-    last_error = None
     for model in models:
         try:
             print(f"[INFO] Trying model: {model}")
@@ -247,17 +236,17 @@ Requirements:
                 last_delim = latex_code.rfind("```")
                 latex_code = latex_code[first_delim:last_delim].strip()
 
+            # Basic validation: ensure it looks like LaTeX
+            if not (latex_code.strip().startswith('\\documentclass') or latex_code.strip().startswith('%')):
+                raise ValueError("Generated content does not appear to be valid LaTeX.")
+
             return latex_code
 
         except Exception as e:
-            last_error = e
             print(f"[WARNING] Failed with model {model}: {str(e)}")
             continue
 
-    if last_error:
-        raise last_error
-    else:
-        raise Exception("All models failed without specific error")
+    raise Exception("All Mistral models failed to generate LaTeX or returned invalid LaTeX.")
 
 @app.route('/')
 def index():
