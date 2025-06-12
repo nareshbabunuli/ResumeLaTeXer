@@ -324,7 +324,7 @@ def generate_resume():
         # Construct URL for the permanent file
         permanent_file_url = url_for('get_file_content', file_type='latex', filename=output_filename, _external=True)
 
-        return jsonify({'success': True, 'file_url': permanent_file_url})
+        return jsonify({'success': True, 'latex_code': latex_code, 'overleaf_url': permanent_file_url})
 
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500

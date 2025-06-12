@@ -337,8 +337,7 @@
                     if (fileType === 'pdf') {
                         processExistingPdf(file);
                     } else if (fileType === 'latex') {
-                        // Open LaTeX file directly in a new tab
-                        window.open(`/get_file_content?filename=${file}&file_type=latex`, '_blank');
+                        viewLatexContent(file);
                     }
                 };
 
@@ -534,15 +533,13 @@
             fileDisplay.classList.add('hidden');
             dropArea.classList.remove('hidden');
             resumeData = null;
-            // Clear generated LaTeX code and Overleaf URL (no longer directly displayed)
-            // generatedLatexCode = null;
-            // overleafDownloadUrl = null;
+            generatedLatexCode = null; // Clear generated LaTeX code
+            overleafDownloadUrl = null; // Clear Overleaf URL
             templateAndGenerateSection.classList.add('hidden');
-            // Hide LaTeX display section (no longer directly displayed)
-            // latexCodeSection.classList.add('hidden');
-            // latexCodeDisplay.value = '';
-            // overleafForm.classList.add('hidden');
-            // snipUriInput.value = '';
+            latexCodeSection.classList.add('hidden'); // Hide LaTeX display section
+            latexCodeDisplay.value = ''; // Clear displayed LaTeX code
+            overleafForm.classList.add('hidden'); // Hide Overleaf form
+            snipUriInput.value = ''; // Clear snip_uri
             customTemplateInput.classList.add('hidden'); // Hide custom template input
             customTemplateTextarea.value = ''; // Clear custom template textarea
 
@@ -656,11 +653,21 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    // Directly open the generated LaTeX file in a new tab
-                    if (result.file_url) {
-                        window.open(result.file_url, '_blank');
+                    generatedLatexCode = result.latex_code; // Store the LaTeX content
+                    overleafDownloadUrl = result.overleaf_url; // Store Overleaf URL
+
+                    latexCodeDisplay.value = generatedLatexCode;
+                    latexCodeSection.classList.remove('hidden'); // Show the LaTeX display section
+
+                    if (overleafDownloadUrl) {
+                        snipUriInput.value = overleafDownloadUrl;
+                        overleafForm.classList.remove('hidden');
+                    } else {
+                        overleafForm.classList.add('hidden');
                     }
-                    alert('LaTeX resume generated successfully! Opening in new tab.');
+
+                    // Optional: Scroll to the LaTeX section
+                    latexCodeSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     fetchFiles(); // Refresh file lists after successful generation
 
                 } else {
@@ -673,20 +680,20 @@
             }
         });
 
-        // Handle Copy to Clipboard button (removed)
-        // copyToClipboardButton.addEventListener('click', async () => {
-        //     if (!generatedLatexCode) {
-        //         alert('No LaTeX code to copy.');
-        //         return;
-        //     }
-        //     try {
-        //         await navigator.clipboard.writeText(generatedLatexCode);
-        //         alert('LaTeX code copied to clipboard!');
-        //     } catch (err) {
-        //         console.error('Failed to copy: ', err);
-        //         alert('Failed to copy LaTeX code. Please copy manually.');
-        //     }
-        // });
+        // Handle Copy to Clipboard button
+        copyToClipboardButton.addEventListener('click', async () => {
+            if (!generatedLatexCode) {
+                alert('No LaTeX code to copy.');
+                return;
+            }
+            try {
+                await navigator.clipboard.writeText(generatedLatexCode);
+                alert('LaTeX code copied to clipboard!');
+            } catch (err) {
+                console.error('Failed to copy: ', err);
+                alert('Failed to copy LaTeX code. Please copy manually.');
+            }
+        });
 
         // Delete All Files functionality
         document.getElementById('deleteAllButton').addEventListener('click', async () => {
