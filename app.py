@@ -15,6 +15,34 @@ import time
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # Required for flash messages
 
+# Add a global error handler for 500 errors
+@app.errorhandler(500)
+def internal_server_error(e):
+    # Log the full exception for debugging
+    print(f"[ERROR] Global 500 Error: {e}")
+    # Try to extract a more specific error message if possible
+    error_message = "An unexpected error occurred on the server."
+    if hasattr(e, 'original_exception') and e.original_exception:
+        # If it's a werkzeug exception wrapper, get the original exception
+        original_e = e.original_exception
+        if hasattr(original_e, 'response') and hasattr(original_e.response, 'text'):
+            try:
+                error_details = json.loads(original_e.response.text)
+                if 'message' in error_details:
+                    error_message = f"API Error: {error_details['message']}"
+                elif 'error' in error_details:
+                    error_message = f"API Error: {error_details['error']}"
+                else:
+                    error_message = f"API Error (unknown format): {original_e.response.text}"
+            except json.JSONDecodeError:
+                error_message = f"API Error: {original_e.response.text}"
+        else:
+            error_message = str(original_e)
+    else:
+        error_message = str(e) # Fallback for other exceptions
+
+    return jsonify({'success': False, 'error': error_message}), 500
+
 # Use /tmp for file storage in Vercel environment
 TEMP_DIR = tempfile.gettempdir()
 app.config['UPLOAD_FOLDER'] = os.path.join(TEMP_DIR, 'upload_resumes')
