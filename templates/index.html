@@ -136,12 +136,9 @@
                         <button id="copyToClipboardButton" class="w-full mt-3 bg-gray-700 text-white py-2 px-4 rounded-lg hover:bg-gray-800 transition duration-200 text-base font-semibold">
                             <i class="fas fa-copy mr-2"></i> Copy to Clipboard
                         </button>
-                        <form id="overleafForm" action="https://www.overleaf.com/docs" method="post" target="_blank" class="mt-3 hidden w-full">
-                            <input type="hidden" name="snip_uri" id="snipUriInput">
-                            <button type="submit" id="openInOverleafButton" class="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition duration-200 text-base font-semibold">
-                                <i class="fas fa-external-link-alt mr-2"></i> Open in Overleaf to Generate PDF
-                            </button>
-                        </form>
+                        <button type="button" id="openInOverleafButton" class="w-full mt-3 bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition duration-200 text-base font-semibold">
+                            <i class="fas fa-external-link-alt mr-2"></i> Open in Overleaf (Copy/Paste)
+                        </button>
                     </div>
                 </div>
 
@@ -692,6 +689,23 @@
             } catch (err) {
                 console.error('Failed to copy: ', err);
                 alert('Failed to copy LaTeX code. Please copy manually.');
+            }
+        });
+
+        // Handle Open in Overleaf button (modified for copy/paste)
+        openInOverleafButton.addEventListener('click', async () => {
+            if (!generatedLatexCode) {
+                alert('No LaTeX code to send to Overleaf.');
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(generatedLatexCode);
+                alert('LaTeX code copied to clipboard! Opening Overleaf in new tab. Please paste the code there.');
+                window.open('https://www.overleaf.com/docs', '_blank'); // Open Overleaf dashboard
+            } catch (err) {
+                console.error('Failed to copy for Overleaf: ', err);
+                alert('Failed to copy LaTeX code for Overleaf. Please copy manually and paste.');
             }
         });
 
