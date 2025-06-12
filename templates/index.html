@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Processor</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto">
+            <h1 class="text-4xl font-bold text-center text-gray-800 mb-8">Resume Processor</h1>
+            <p class="text-center text-gray-600 mb-8 max-w-2xl mx-auto">Transform your PDF resume into a professional, customizable LaTeX document with AI. Choose from elegant templates or use your own, then easily generate a high-quality PDF.</p>
+            
+            <!-- Main Content Area -->
+            <div class="flex flex-col lg:flex-row gap-8">
+                <!-- Left Column: Upload, API Key, Template Selection, and Generated LaTeX -->
+                <div class="lg:w-2/3 bg-white rounded-lg shadow-md p-8">
+                    <h2 class="text-2xl font-semibold text-gray-700 mb-6">Add New Resume</h2>
+
+                    <!-- Upload Section -->
+                    <div class="mb-6">
+                        <form id="uploadForm" class="space-y-4">
+                            <div id="drop-area" class="border-2 border-dashed border-blue-300 rounded-lg p-8 text-center bg-blue-50 hover:bg-blue-100 transition-colors duration-200 cursor-pointer">
+                                <input type="file" id="resumeFile" accept=".pdf" class="hidden">
+                                <label for="resumeFile" class="cursor-pointer block">
+                                    <i class="fas fa-cloud-upload-alt text-5xl text-blue-500 mb-3"></i>
+                                    <p class="text-blue-700 text-lg font-medium">Drag & Drop or <span class="text-blue-600 underline">Choose file</span> to upload</p>
+                                    <p class="text-gray-500 text-sm mt-1">Supported formats: PDF only</p>
+                                </label>
+                            </div>
+                            <div id="fileDisplay" class="flex items-center justify-between bg-gray-100 p-3 rounded-lg hidden">
+                                <div class="flex items-center">
+                                    <i class="fas fa-file-pdf text-red-500 text-2xl mr-3"></i>
+                                    <span id="fileName" class="text-gray-700 font-medium"></span>
+                                </div>
+                                <button type="button" id="removeFile" class="text-gray-500 hover:text-gray-700">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <button type="submit" class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-200 text-lg font-semibold">
+                                Process Resume
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="flex items-center justify-center my-6">
+                        <span class="bg-gray-300 h-px flex-grow"></span>
+                        <span class="mx-4 text-gray-500 text-sm">or</span>
+                        <span class="bg-gray-300 h-px flex-grow"></span>
+                    </div>
+
+                    <!-- API Key Section -->
+                    <div class="mb-8">
+                        <h2 class="text-xl font-semibold text-gray-700 mb-3">Mistral AI Key</h2>
+                        <p class="text-gray-600 text-sm mb-3">Your API key is used to process your resume and is <span class="font-bold text-red-500">NOT saved</span> after the process is complete.</p>
+                        <input type="text" id="mistralApiKey" placeholder="Enter your Mistral API Key" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <p class="mt-2 text-sm text-gray-500">To get a free Mistral AI key, visit <a href="https://console.mistral.ai/api-keys" target="_blank" class="text-blue-600 hover:underline">Mistral AI API Keys</a></p>
+                    </div>
+
+                    <!-- Template Selection & Generate Section -->
+                    <div id="templateAndGenerateSection" class="hidden">
+                        <h2 class="text-xl font-semibold text-gray-700 mb-4">Choose Template Style</h2>
+                        <p class="text-gray-600 text-sm mb-4">Select a template below to style your resume.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <div class="template-option border-2 border-gray-300 rounded-lg p-4 cursor-pointer hover:border-blue-500 transition-colors duration-200" data-template="template1">
+                                <img src="/static/images/template1.png" alt="Template 1 Preview" class="w-full h-32 object-contain mb-3 border border-gray-200 rounded">
+                                <h3 class="font-semibold mb-2 text-lg">Template 1</h3>
+                                <p class="text-sm text-gray-600">Professional and clean design</p>
+                            </div>
+                            <div class="template-option border-2 border-gray-300 rounded-lg p-4 cursor-pointer hover:border-blue-500 transition-colors duration-200" data-template="template2">
+                                <img src="/static/images/template2.png" alt="Template 2 Preview" class="w-full h-32 object-contain mb-3 border border-gray-200 rounded">
+                                <h3 class="font-semibold mb-2 text-lg">Template 2</h3>
+                                <p class="text-sm text-gray-600">Modern and creative layout</p>
+                            </div>
+                            <div class="template-option border-2 border-gray-300 rounded-lg p-4 cursor-pointer hover:border-blue-500 transition-colors duration-200" data-template="template3">
+                                <img src="/static/images/template3.png" alt="Template 3 Preview" class="w-full h-32 object-contain mb-3 border border-gray-200 rounded">
+                                <h3 class="font-semibold mb-2 text-lg">Template 3</h3>
+                                <p class="text-sm text-gray-600">Simple and elegant style</p>
+                            </div>
+                            <div class="template-option border-2 border-gray-300 rounded-lg p-4 cursor-pointer hover:border-blue-500 transition-colors duration-200" data-template="template4">
+                                <img src="/static/images/template4.png" alt="Custom Template" class="w-full h-32 object-contain mb-3 border border-gray-200 rounded">
+                                <h3 class="font-semibold mb-2 text-lg">Template 4 (Custom)</h3>
+                                <p class="text-sm text-gray-600">Paste your own LaTeX template</p>
+                            </div>
+                        </div>
+
+                        <div id="customTemplateInput" class="mt-4 hidden">
+                            <h3 class="font-semibold text-gray-700 mb-2">Paste your custom LaTeX template here:</h3>
+                            <textarea id="customTemplateTextarea" rows="10" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm" placeholder="\documentclass{article}\n\begin{document}\n\end{document}"></textarea>
+                        </div>
+
+                        <button id="generateButton" class="w-full mt-6 bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition duration-200 text-lg font-semibold">
+                            Generate LaTeX Resume
+                        </button>
+                    </div>
+
+                    <!-- Generated LaTeX Code Display -->
+                    <div id="latexCodeSection" class="mt-6 hidden">
+                        <h2 class="text-xl font-semibold text-gray-700 mb-3">Generated LaTeX Code</h2>
+                        <textarea id="latexCodeDisplay" rows="15" class="w-full p-4 border border-gray-300 rounded-lg font-mono text-sm bg-gray-50 resize-y" readonly></textarea>
+                        <button id="copyToClipboardButton" class="w-full mt-3 bg-gray-700 text-white py-2 px-4 rounded-lg hover:bg-gray-800 transition duration-200 text-base font-semibold">
+                            <i class="fas fa-copy mr-2"></i> Copy to Clipboard
+                        </button>
+                        <form id="overleafForm" action="https://www.overleaf.com/docs" method="post" target="_blank" class="mt-3 hidden w-full">
+                            <input type="hidden" name="snip_uri" id="snipUriInput">
+                            <button type="submit" id="openInOverleafButton" class="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition duration-200 text-base font-semibold">
+                                <i class="fas fa-external-link-alt mr-2"></i> Open in Overleaf to Generate PDF
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Right Column: File Management -->
+                <div class="lg:w-1/3 bg-white rounded-lg shadow-md p-8">
+                    <h2 class="text-2xl font-semibold text-gray-700 mb-6">Your Files</h2>
+
+                    <!-- Delete All Button -->
+                    <button id="deleteAllButton" class="w-full mb-6 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition duration-200 text-base font-semibold">
+                        <i class="fas fa-trash-alt mr-2"></i> Delete All Files
+                    </button>
+
+                    <!-- Uploaded Resumes -->
+                    <div class="mb-6">
+                        <h3 class="text-xl font-semibold text-gray-700 mb-3">Uploaded Resumes (PDF)</h3>
+                        <ul id="uploadedPdfsList" class="space-y-2 text-gray-700">
+                            <li class="text-gray-500">No PDFs uploaded yet.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Generated LaTeX Files -->
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-700 mb-3">Generated LaTeX Files (.tex)</h3>
+                        <ul id="generatedLatexList" class="space-y-2 text-gray-700">
+                            <li class="text-gray-500">No LaTeX files generated yet.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Help Center/Footer -->
+            <div class="mt-8 text-center text-gray-500 text-sm">
+                <p class="mt-2 text-gray-600"><i class="fab fa-github mr-2"></i> If you like the project, please give stars in my <a href="https://github.com/nareshbabunuli/ResumeLaTeXer" target="_blank" class="text-blue-600 hover:underline">GitHub repo</a>. Thank you!</p>
+                <p class="mt-2 text-gray-600"><i class="fas fa-exclamation-circle mr-2"></i> For template requests or issues, post on <a href="https://github.com/nareshbabunuli/ResumeLaTeXer/issues" target="_blank" class="text-blue-600 hover:underline">GitHub Issues</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center hidden z-50">
+        <div class="bg-white p-6 rounded-lg shadow-xl flex flex-col items-center">
+            <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mb-4"></div>
+            <p class="text-lg font-semibold text-gray-700">Processing... Please wait.</p>
+            <div class="progress-container">
+                <div id="progressBar" class="progress-bar"></div>
+            </div>
+            <p id="progressText" class="progress-text">0%</p>
+        </div>
+    </div>
+
+    <style>
+        .loader {
+            border-top-color: #3B82F6; /* blue-500 */
+            -webkit-animation: spinner 1.2s linear infinite;
+            animation: spinner 1.2s linear infinite;
+        }
+
+        @-webkit-keyframes spinner {
+            0% { -webkit-transform: rotate(0deg); }
+            100% { -webkit-transform: rotate(360deg); }
+        }
+
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* New styles for progress bar */
+        .progress-container {
+            width: 250px;
+            height: 15px;
+            background-color: #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: #3B82F6; /* blue-500 */
+            border-radius: 8px;
+            transition: width 0.3s ease-in-out;
+        }
+
+        .progress-text {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #4a4a4a;
+        }
+    </style>
+
+    <script>
+        let resumeData = null;
+        let selectedTemplate = 'template1';
+        let generatedLatexCode = null; // Store the generated LaTeX code
+        let overleafDownloadUrl = null; // Store the URL for Overleaf
+
+        // Elements
+        const resumeFileInput = document.getElementById('resumeFile');
+        const dropArea = document.getElementById('drop-area');
+        const fileDisplay = document.getElementById('fileDisplay');
+        const fileNameSpan = document.getElementById('fileName');
+        const removeFileButton = document.getElementById('removeFile');
+        const uploadForm = document.getElementById('uploadForm');
+        const mistralApiKeyInput = document.getElementById('mistralApiKey');
+        const templateAndGenerateSection = document.getElementById('templateAndGenerateSection');
+        const generateButton = document.getElementById('generateButton');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const latexCodeSection = document.getElementById('latexCodeSection');
+        const latexCodeDisplay = document.getElementById('latexCodeDisplay');
+        const copyToClipboardButton = document.getElementById('copyToClipboardButton');
+        const overleafForm = document.getElementById('overleafForm');
+        const snipUriInput = document.getElementById('snipUriInput');
+        const openInOverleafButton = document.getElementById('openInOverleafButton');
+        const customTemplateInput = document.getElementById('customTemplateInput');
+        const customTemplateTextarea = document.getElementById('customTemplateTextarea');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const uploadedPdfsList = document.getElementById('uploadedPdfsList');
+        const generatedLatexList = document.getElementById('generatedLatexList');
+
+        let progressInterval;
+
+        // Helper functions for loading overlay
+        function showLoading() {
+            loadingOverlay.classList.remove('hidden');
+            updateProgressBar(0);
+            startSimulatedProgress();
+        }
+
+        function hideLoading() {
+            clearInterval(progressInterval);
+            updateProgressBar(100); // Ensure it shows 100% before hiding
+            setTimeout(() => {
+                loadingOverlay.classList.add('hidden');
+            }, 300); // Small delay to show 100%
+        }
+
+        function updateProgressBar(percentage) {
+            progressBar.style.width = percentage + '%';
+            progressText.textContent = percentage + '%';
+        }
+
+        function startSimulatedProgress() {
+            let progress = 0;
+            progressInterval = setInterval(() => {
+                if (progress < 90) { // Simulate up to 90% while processing
+                    progress += 5;
+                    updateProgressBar(progress);
+                } else {
+                    clearInterval(progressInterval);
+                }
+            }, 500); // Update every 0.5 seconds
+        }
+
+        // File management functions
+        async function fetchFiles() {
+            try {
+                const response = await fetch('/list_files');
+                const result = await response.json();
+
+                if (result.success === false) { // Handle potential error from backend
+                    console.error("Error fetching files:", result.error);
+                    return;
+                }
+
+                populateFileList(uploadedPdfsList, result.uploaded_pdfs, 'pdf');
+                populateFileList(generatedLatexList, result.generated_latex, 'latex');
+
+            } catch (error) {
+                console.error('Error fetching file lists:', error);
+                uploadedPdfsList.innerHTML = '<li class="text-red-500">Error loading PDFs.</li>';
+                generatedLatexList.innerHTML = '<li class="text-red-500">Error loading LaTeX files.</li>';
+            }
+        }
+
+        function populateFileList(ulElement, files, fileType) {
+            ulElement.innerHTML = '';
+            if (files.length === 0) {
+                ulElement.innerHTML = `<li class="text-gray-500">No ${fileType === 'pdf' ? 'PDFs' : 'LaTeX files'} found.</li>`;
+                return;
+            }
+
+            files.forEach(file => {
+                const li = document.createElement('li');
+                li.classList.add('flex', 'items-center', 'justify-between', 'py-1');
+
+                const fileNameSpan = document.createElement('span');
+                fileNameSpan.textContent = file;
+                fileNameSpan.classList.add('cursor-pointer', 'hover:underline', 'text-blue-700', 'break-all');
+                fileNameSpan.onclick = () => {
+                    if (fileType === 'pdf') {
+                        processExistingPdf(file);
+                    } else if (fileType === 'latex') {
+                        viewLatexContent(file);
+                    }
+                };
+
+                const deleteButton = document.createElement('button');
+                deleteButton.innerHTML = '<i class="fas fa-trash-alt text-red-500 hover:text-red-700"></i>';
+                deleteButton.classList.add('ml-3', 'px-2', 'py-1', 'rounded');
+                deleteButton.onclick = () => deleteFile(file, fileType);
+
+                li.appendChild(fileNameSpan);
+                li.appendChild(deleteButton);
+                ulElement.appendChild(li);
+            });
+        }
+
+        async function processExistingPdf(filename) {
+            const mistralApiKey = mistralApiKeyInput.value.trim();
+            if (!mistralApiKey) {
+                alert('Please enter your Mistral API Key to re-process this PDF.');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const response = await fetch('/process_existing_pdf', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        filename: filename,
+                        api_key: mistralApiKey
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    resumeData = result.data;
+                    templateAndGenerateSection.classList.remove('hidden');
+                    latexCodeSection.classList.add('hidden');
+                    latexCodeDisplay.value = '';
+                    overleafForm.classList.add('hidden');
+                    snipUriInput.value = '';
+                    customTemplateInput.classList.add('hidden');
+                    customTemplateTextarea.value = '';
+                    alert(`Successfully re-processed ${filename}. You can now generate LaTeX.`);
+                } else {
+                    alert(`Error re-processing ${filename}: ` + result.error);
+                }
+            } catch (error) {
+                alert(`Error re-processing ${filename}: ` + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function viewLatexContent(filename) {
+            showLoading();
+            try {
+                const response = await fetch(`/get_file_content?filename=${filename}&file_type=latex`);
+                const result = await response.json();
+
+                if (result.success) {
+                    generatedLatexCode = result.content;
+                    latexCodeDisplay.value = generatedLatexCode;
+                    latexCodeSection.classList.remove('hidden');
+                    overleafForm.classList.add('hidden'); // Hide Overleaf form as we're just viewing content
+                    snipUriInput.value = '';
+
+                    // Optional: Scroll to the LaTeX section
+                    latexCodeSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else {
+                    alert(`Error viewing ${filename}: ` + result.error);
+                }
+            } catch (error) {
+                alert(`Error viewing ${filename}: ` + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function deleteFile(filename, fileType) {
+            if (!confirm(`Are you sure you want to delete ${filename}?`)) {
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const response = await fetch('/delete_file', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        filename: filename,
+                        file_type: fileType
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert(result.message);
+                    fetchFiles(); // Refresh file lists
+                    // Reset main form if the deleted file was the one currently being processed/displayed
+                    if (fileType === 'pdf' && fileNameSpan.textContent === filename) {
+                        resetFileInput();
+                    } else if (fileType === 'latex' && latexCodeDisplay.value && generatedLatexCode === result.content) { // Need a way to check if current content is the deleted one
+                         // For now, let's just reset if the displayed LaTeX is gone.
+                        latexCodeSection.classList.add('hidden');
+                        latexCodeDisplay.value = '';
+                        overleafForm.classList.add('hidden');
+                        generatedLatexCode = null;
+                        overleafDownloadUrl = null;
+                    }
+                } else {
+                    alert(`Error deleting ${filename}: ` + result.error);
+                }
+            } catch (error) {
+                alert(`Error deleting ${filename}: ` + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Drag and Drop functionality
+        ;['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ;['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+
+        ;['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight() {
+            dropArea.classList.add('border-blue-500', 'bg-blue-100');
+        }
+
+        function unhighlight() {
+            dropArea.classList.remove('border-blue-500', 'bg-blue-100');
+        }
+
+        dropArea.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        }
+
+        // Handle file input change
+        resumeFileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        function handleFiles(files) {
+            if (files.length === 0) return;
+
+            const file = files[0];
+            if (file.type !== 'application/pdf') {
+                alert('Only PDF files are supported.');
+                resetFileInput();
+                return;
+            }
+            
+            // Set the file to the input element
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            resumeFileInput.files = dataTransfer.files;
+
+            fileNameSpan.textContent = file.name;
+            fileDisplay.classList.remove('hidden');
+            dropArea.classList.add('hidden');
+        }
+
+        removeFileButton.addEventListener('click', () => {
+            resetFileInput();
+        });
+
+        function resetFileInput() {
+            resumeFileInput.value = null; // Clear the input
+            fileDisplay.classList.add('hidden');
+            dropArea.classList.remove('hidden');
+            resumeData = null;
+            generatedLatexCode = null; // Clear generated LaTeX code
+            overleafDownloadUrl = null; // Clear Overleaf URL
+            templateAndGenerateSection.classList.add('hidden');
+            latexCodeSection.classList.add('hidden'); // Hide LaTeX display section
+            latexCodeDisplay.value = ''; // Clear displayed LaTeX code
+            overleafForm.classList.add('hidden'); // Hide Overleaf form
+            snipUriInput.value = ''; // Clear snip_uri
+            customTemplateInput.classList.add('hidden'); // Hide custom template input
+            customTemplateTextarea.value = ''; // Clear custom template textarea
+
+            // Clear and re-fetch file lists
+            uploadedPdfsList.innerHTML = '<li class="text-gray-500">No PDFs uploaded yet.</li>';
+            generatedLatexList.innerHTML = '<li class="text-gray-500">No LaTeX files generated yet.</li>';
+            fetchFiles();
+        }
+
+        // Handle file upload
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const file = resumeFileInput.files[0];
+            const mistralApiKey = mistralApiKeyInput.value.trim();
+            
+            if (!file) {
+                alert('Please select a file first.');
+                return;
+            }
+            if (!mistralApiKey) {
+                alert('Please enter your Mistral API Key.');
+                return;
+            }
+
+            showLoading(); // Show loading overlay
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('api_key', mistralApiKey); // Pass API key to backend
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    resumeData = result.data;
+                    templateAndGenerateSection.classList.remove('hidden');
+                    // Hide LaTeX display and Overleaf button if visible from previous run
+                    latexCodeSection.classList.add('hidden');
+                    latexCodeDisplay.value = '';
+                    overleafForm.classList.add('hidden');
+                    snipUriInput.value = '';
+                    customTemplateInput.classList.add('hidden'); // Hide custom template input
+                    customTemplateTextarea.value = ''; // Clear custom template textarea
+                    fetchFiles(); // Refresh file lists after successful upload
+                } else {
+                    alert('Error processing file: ' + result.error);
+                    resetFileInput();
+                }
+            } catch (error) {
+                alert('Error uploading file: ' + error.message);
+                resetFileInput();
+            } finally {
+                hideLoading(); // Hide loading overlay
+            }
+        });
+
+        // Handle template selection
+        document.querySelectorAll('.template-option').forEach(option => {
+            option.addEventListener('click', () => {
+                document.querySelectorAll('.template-option').forEach(opt => {
+                    opt.classList.remove('border-blue-500', 'ring-2', 'ring-blue-500');
+                });
+                option.classList.add('border-blue-500', 'ring-2', 'ring-blue-500'); // Add ring for selected state
+                selectedTemplate = option.dataset.template;
+
+                // Show/hide custom template input based on selection
+                if (selectedTemplate === 'template4') {
+                    customTemplateInput.classList.remove('hidden');
+                } else {
+                    customTemplateInput.classList.add('hidden');
+                }
+            });
+        });
+
+        // Set initial selected template style
+        document.querySelector('.template-option[data-template="template1"]').classList.add('border-blue-500', 'ring-2', 'ring-blue-500');
+
+        // Handle generate button
+        generateButton.addEventListener('click', async () => {
+            if (!resumeData) {
+                alert('Please upload and process a resume first');
+                return;
+            }
+
+            const mistralApiKey = mistralApiKeyInput.value.trim();
+            if (!mistralApiKey) {
+                alert('Please enter your Mistral API Key.');
+                return;
+            }
+
+            let templateContent = selectedTemplate; // Default to existing template name
+            if (selectedTemplate === 'template4') {
+                templateContent = customTemplateTextarea.value.trim();
+                if (!templateContent) {
+                    alert('Please paste your custom LaTeX template.');
+                    return;
+                }
+            }
+
+            showLoading(); // Show loading overlay
+
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        template: templateContent, // Send template content for custom option
+                        resume_data: resumeData,
+                        api_key: mistralApiKey
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    generatedLatexCode = result.latex_code; // Store the LaTeX content
+                    overleafDownloadUrl = result.overleaf_url; // Store Overleaf URL
+
+                    latexCodeDisplay.value = generatedLatexCode;
+                    latexCodeSection.classList.remove('hidden'); // Show the LaTeX display section
+
+                    if (overleafDownloadUrl) {
+                        snipUriInput.value = overleafDownloadUrl;
+                        overleafForm.classList.remove('hidden');
+                    } else {
+                        overleafForm.classList.add('hidden');
+                    }
+
+                    // Optional: Scroll to the LaTeX section
+                    latexCodeSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    fetchFiles(); // Refresh file lists after successful generation
+
+                } else {
+                    alert('Error generating resume: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error generating resume: ' + error.message);
+            } finally {
+                hideLoading(); // Hide loading overlay
+            }
+        });
+
+        // Handle Copy to Clipboard button
+        copyToClipboardButton.addEventListener('click', async () => {
+            if (!generatedLatexCode) {
+                alert('No LaTeX code to copy.');
+                return;
+            }
+            try {
+                await navigator.clipboard.writeText(generatedLatexCode);
+                alert('LaTeX code copied to clipboard!');
+            } catch (err) {
+                console.error('Failed to copy: ', err);
+                alert('Failed to copy LaTeX code. Please copy manually.');
+            }
+        });
+
+        // Delete All Files functionality
+        document.getElementById('deleteAllButton').addEventListener('click', async () => {
+            if (!confirm('Are you sure you want to delete all files? This action cannot be undone.')) {
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const response = await fetch('/delete_all_files', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert(result.message);
+                    // Reset the UI
+                    resetFileInput();
+                    // Refresh file lists
+                    fetchFiles();
+                } else {
+                    alert('Error deleting files: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error deleting files: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // Initial fetch of files on page load
+        document.addEventListener('DOMContentLoaded', fetchFiles);
+
+    </script>
+</body>
+</html> 

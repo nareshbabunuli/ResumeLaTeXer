@@ -6,10 +6,51 @@ from mistralai.models.chat_completion import ChatMessage
 from dotenv import load_dotenv
 import requests
 import base64
+from flask import Flask, render_template, request, jsonify, send_file, flash, redirect, url_for
+from werkzeug.utils import secure_filename
+import tempfile
+import uuid
+import threading
+import time
 
 # Load environment variables
 load_dotenv()
 
+app = Flask(__name__)
+app.secret_key = os.urandom(24)  # Required for flash messages
+app.config['UPLOAD_FOLDER'] = 'upload'
+app.config['OUTPUT_FOLDER'] = 'output' # New output folder
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+
+# Ensure upload and output directories exist
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
+
+ALLOWED_EXTENSIONS = {'pdf'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def delete_old_files():
+    while True:
+        print("[INFO] Running scheduled file cleanup...")
+        for folder in [app.config['UPLOAD_FOLDER'], app.config['OUTPUT_FOLDER']]:
+            for filename in os.listdir(folder):
+                filepath = os.path.join(folder, filename)
+                if os.path.isfile(filepath):
+                    # Delete files older than 24 hours
+                    if (time.time() - os.path.getmtime(filepath)) > 24 * 3600:
+                        try:
+                            os.remove(filepath)
+                            print(f"[INFO] Deleted old file: {filepath}")
+                        except Exception as e:
+                            print(f"[ERROR] Error deleting file {filepath}: {e}")
+        time.sleep(24 * 3600) # Run every 24 hours
+
+# Start the cleanup thread
+cleanup_thread = threading.Thread(target=delete_old_files)
+cleanup_thread.daemon = True # Allows the main program to exit even if this thread is running
+cleanup_thread.start()
 
 def extract_text_from_pdf(filepath: str) -> str:
     """
@@ -29,7 +70,6 @@ def extract_text_from_pdf(filepath: str) -> str:
     except Exception as e:
         raise Exception(f"Error extracting text from PDF: {str(e)}")
 
-
 def convert_resume_to_json(pdf_text: str, api_key: str) -> str:
     """
     Sends extracted PDF text to Mistral, requesting structured JSON.
@@ -37,7 +77,6 @@ def convert_resume_to_json(pdf_text: str, api_key: str) -> str:
     """
     client = MistralClient(api_key=api_key)
 
-    # List of models to try in order of preference
     models = [
         "mistral-large-latest",
         "mistral-medium-latest",
@@ -108,12 +147,10 @@ Return ONLY the JSON object, with no code fences or explanations.
             print(f"[WARNING] Failed with model {model}: {str(e)}")
             continue
 
-    # If all models failed, raise the last error
     if last_error:
         raise last_error
     else:
         raise Exception("All models failed without specific error")
-
 
 def convert_json_and_template_to_latex(json_data: dict, template_str: str, api_key: str) -> str:
     """
@@ -183,124 +220,231 @@ Requirements:
             print(f"[WARNING] Failed with model {model}: {str(e)}")
             continue
 
-    # If all models failed, raise the last error
     if last_error:
         raise last_error
     else:
         raise Exception("All models failed without specific error")
 
+@app.route('/')
+def index():
+    return render_template('index.html')
 
-def send_to_overleaf(latex_code: str, project_name: str = "Generated Resume") -> str:
-    """
-    Sends the LaTeX code to Overleaf and returns the project URL.
-    Uses base64 encoding to handle large LaTeX content.
-    """
-    # Encode the LaTeX code in base64
-    encoded_latex = base64.b64encode(latex_code.encode('utf-8')).decode('utf-8')
-
-    # Create the Overleaf URL with the base64 encoded content
-    overleaf_url = f"https://www.overleaf.com/docs?snip_uri=data:application/x-tex;base64,{encoded_latex}"
-
-    print(f"[INFO] Generated Overleaf URL: {overleaf_url}")
-    return overleaf_url
-
-
-def save_latex_file(latex_code: str, output_tex: str = "resume.tex", send_to_overleaf_flag: bool = False):
-    """
-    Writes LaTeX code to output file and provides instructions for manual Overleaf upload.
-    Returns the path to the saved LaTeX file.
-    """
-    # Ensure output directory exists
-    output_dir = os.path.dirname(output_tex)
-    if output_dir and not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-
-    # Write the LaTeX code to the specified file
-    with open(output_tex, 'w', encoding='utf-8') as f:
-        f.write(latex_code)
-
-    print(f"[INFO] LaTeX template saved to: {output_tex}")
-
-    print("\n[INFO] To convert to PDF using Overleaf:")
-    print("1. Go to https://www.overleaf.com")
-    print("2. Create a new project")
-    print("3. Upload the generated .tex file")
-    print(f"4. The file is located at: {os.path.abspath(output_tex)}")
-
-    return output_tex
-
-
-def main():
-    # ------------------
-    # 1) Configuration
-    # ------------------
-    pdf_file = "upload/" + os.getenv("PDF_FILE_PATH")  # Path to your resume PDF
-
-    # Get API key from environment variable for security
-    api_key = os.getenv("MISTRAL_API_KEY")
-    if not api_key:
-        print("[ERROR] Please set MISTRAL_API_KEY environment variable")
-        return
-
-    chosen_template = "template1"  # or "template2"
-    output_tex_filename = os.path.join('output', 'generated_resume.tex')
-    send_to_overleaf_flag = True  # Set to True to automatically send to Overleaf
-
-    try:
-        # -----------------------------
-        # 2) Extract text from the PDF
-        # -----------------------------
-        pdf_text = extract_text_from_pdf(pdf_file)
-        print("[INFO] Extracted PDF text successfully.\n")
-
-        # --------------------------------
-        # 3) Convert PDF text -> JSON data
-        # --------------------------------
-        json_str = convert_resume_to_json(pdf_text, api_key)
-        print("[INFO] JSON response from Mistral:\n", json_str, "\n")
-
-        # Parse the JSON
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    if 'file' not in request.files:
+        flash('No file part')
+        return redirect(request.url)
+    
+    file = request.files['file']
+    if file.filename == '':
+        flash('No selected file')
+        return redirect(request.url)
+    
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+        
         try:
-            resume_data = json.loads(json_str)
-        except json.JSONDecodeError as e:
-            print(f"[ERROR] Failed to parse JSON. Error: {e}")
-            return
+            # Extract text from PDF
+            pdf_text = extract_text_from_pdf(filepath)
+            
+            # Convert to JSON using Mistral
+            api_key = request.form.get('api_key') # Get API key from form data
+            if not api_key:
+                flash('Mistral API key not provided.')
+                return redirect(url_for('index'))
+            
+            json_data = convert_resume_to_json(pdf_text, api_key)
+            return jsonify({'success': True, 'data': json.loads(json_data)})
+            
+        except Exception as e:
+            flash(f'Error processing file: {str(e)}')
+            return redirect(url_for('index'))
+    
+    flash('Invalid file type. Please upload a PDF file.')
+    return redirect(url_for('index'))
 
-        # ----------------------------------
-        # 4) Load chosen LaTeX template file
-        # ----------------------------------
-        template_file = f"templates/{chosen_template}.tex"
-        if not os.path.exists(template_file):
-            print(f"[ERROR] Template file '{template_file}' does not exist.")
-            return
+@app.route('/generate', methods=['POST'])
+def generate_resume():
+    try:
+        data = request.json
+        template_name = data.get('template', 'template1')
+        resume_data = data.get('resume_data')
+        api_key = data.get('api_key') # Get API key from JSON data
 
-        with open(template_file, "r", encoding="utf-8") as tf:
-            template_str = tf.read()
+        if not api_key:
+            return jsonify({'success': False, 'error': 'Mistral API key not provided.'})
 
-        # ---------------------------------------
-        # 5) Merge JSON + Template via Mistral
-        # ---------------------------------------
-        final_latex = convert_json_and_template_to_latex(resume_data, template_str, api_key)
-        print("[INFO] Final LaTeX code from Mistral:\n")
-        print(final_latex, "\n")
+        # Load template
+        # If template is a path (for custom template), read its content
+        if template_name.startswith('template'):
+            # This is a pre-defined template
+            template_path = os.path.join('templates', f'{template_name}.tex')
+            if not os.path.exists(template_path):
+                return jsonify({'success': False, 'error': f'Template file {template_name}.tex not found.'}), 404
+            with open(template_path, 'r', encoding='utf-8') as f:
+                template_str = f.read()
+        else:
+            # This is a custom template content provided directly
+            template_str = template_name # template_name now holds the actual template content
 
-        # Create output directory if it doesn't exist
-        if not os.path.exists('output'):
-            os.makedirs('output')
+        # Generate LaTeX
+        latex_code = convert_json_and_template_to_latex(resume_data, template_str, api_key)
 
-        # ---------------------------------
-        # 6) Save LaTeX file and optionally send to Overleaf
-        # ---------------------------------
-        saved_tex_file = save_latex_file(
-            final_latex,
-            output_tex=output_tex_filename,
-            send_to_overleaf_flag=send_to_overleaf_flag
-        )
-        print(f"[INFO] LaTeX file saved successfully to: {saved_tex_file}")
+        # Save to permanent file in output folder
+        output_filename = f"resume_{uuid.uuid4().hex}.tex"
+        output_filepath = os.path.join(app.config['OUTPUT_FOLDER'], output_filename)
+        with open(output_filepath, 'w', encoding='utf-8') as f:
+            f.write(latex_code)
+
+        # Construct URL for the permanent file
+        permanent_file_url = url_for('get_file_content', file_type='latex', filename=output_filename, _external=True)
+
+        return jsonify({'success': True, 'latex_code': latex_code, 'overleaf_url': permanent_file_url})
 
     except Exception as e:
-        print(f"[ERROR] Exception occurred: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/temp_files/<filename>')
+def serve_temp_file(filename):
+    # Ensure the file is actually in the temporary directory created by tempfile
+    # For simplicity, we'll assume tempfile creates in the system temp directory
+    # In a real app, you might want a dedicated temporary upload folder.
+    try:
+        temp_dir = tempfile.gettempdir()
+        filepath = os.path.join(temp_dir, filename)
+        return send_file(filepath, mimetype='application/x-tex')
+    except Exception as e:
+        return str(e), 404
 
-if __name__ == "__main__":
-    main()
+@app.route('/list_files')
+def list_files():
+    uploaded_pdfs = []
+    generated_latex = []
+
+    for filename in os.listdir(app.config['UPLOAD_FOLDER']):
+        if allowed_file(filename):
+            uploaded_pdfs.append(filename)
+    
+    for filename in os.listdir(app.config['OUTPUT_FOLDER']):
+        if filename.endswith('.tex'):
+            generated_latex.append(filename)
+    
+    return jsonify({
+        'uploaded_pdfs': uploaded_pdfs,
+        'generated_latex': generated_latex
+    })
+
+@app.route('/delete_file', methods=['POST'])
+def delete_file():
+    data = request.json
+    filename = data.get('filename')
+    file_type = data.get('file_type') # 'pdf' or 'latex'
+
+    if not filename or not file_type:
+        return jsonify({'success': False, 'error': 'Filename and file type are required.'}), 400
+
+    if file_type == 'pdf':
+        folder = app.config['UPLOAD_FOLDER']
+    elif file_type == 'latex':
+        folder = app.config['OUTPUT_FOLDER']
+    else:
+        return jsonify({'success': False, 'error': 'Invalid file type.'}), 400
+
+    filepath = os.path.join(folder, filename)
+
+    if os.path.exists(filepath):
+        try:
+            os.remove(filepath)
+            return jsonify({'success': True, 'message': f'{filename} deleted.'})
+        except Exception as e:
+            return jsonify({'success': False, 'error': f'Error deleting file: {str(e)}'}), 500
+    else:
+        return jsonify({'success': False, 'error': f'{filename} not found.'}), 404
+
+@app.route('/delete_all_files', methods=['POST'])
+def delete_all_files():
+    try:
+        # Delete all files in upload folder
+        for filename in os.listdir(app.config['UPLOAD_FOLDER']):
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            if os.path.isfile(filepath):
+                os.remove(filepath)
+
+        # Delete all files in output folder
+        for filename in os.listdir(app.config['OUTPUT_FOLDER']):
+            filepath = os.path.join(app.config['OUTPUT_FOLDER'], filename)
+            if os.path.isfile(filepath):
+                os.remove(filepath)
+
+        return jsonify({'success': True, 'message': 'All files deleted successfully.'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': f'Error deleting files: {str(e)}'}), 500
+
+@app.route('/get_file_content')
+def get_file_content():
+    filename = request.args.get('filename')
+    file_type = request.args.get('file_type') # 'pdf' or 'latex'
+
+    if not filename or not file_type:
+        return jsonify({'success': False, 'error': 'Filename and file type are required.'}), 400
+
+    if file_type == 'pdf':
+        folder = app.config['UPLOAD_FOLDER']
+    elif file_type == 'latex':
+        folder = app.config['OUTPUT_FOLDER']
+    else:
+        return jsonify({'success': False, 'error': 'Invalid file type.'}), 400
+
+    filepath = os.path.join(folder, filename)
+
+    if os.path.exists(filepath):
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                content = f.read()
+            return jsonify({'success': True, 'content': content})
+        except Exception as e:
+            return jsonify({'success': False, 'error': f'Error reading file: {str(e)}'}), 500
+    else:
+        return jsonify({'success': False, 'error': f'{filename} not found.'}), 404
+
+@app.route('/process_existing_pdf', methods=['POST'])
+def process_existing_pdf():
+    data = request.json
+    filename = data.get('filename')
+    api_key = data.get('api_key')
+
+    if not filename or not api_key:
+        return jsonify({'success': False, 'error': 'Filename and API key are required.'}), 400
+
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+
+    if not os.path.exists(filepath):
+        return jsonify({'success': False, 'error': 'PDF file not found.'}), 404
+
+    try:
+        pdf_text = extract_text_from_pdf(filepath)
+        json_data = convert_resume_to_json(pdf_text, api_key)
+        return jsonify({'success': True, 'data': json.loads(json_data)})
+    except Exception as e:
+        return jsonify({'success': False, 'error': f'Error processing existing PDF: {str(e)}'}), 500
+
+@app.route('/github_stats')
+def github_stats():
+    repo_owner = "nareshbabunuli"
+    repo_name = "ResumeLaTeXer"
+    api_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}"
+    
+    try:
+        response = requests.get(api_url)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        repo_data = response.json()
+        stars = repo_data.get('stargazers_count', 0)
+        return jsonify({'stars': stars})
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching GitHub stars: {e}")
+        return jsonify({'error': 'Could not fetch GitHub stars'}), 500
+
+if __name__ == '__main__':
+    app.run(debug=True)
