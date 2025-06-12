@@ -1,0 +1,290 @@
+%%%%
+% MTecknology's Resume
+%%%%
+% Author: Michael Lustfield
+% License: CC-BY-4
+% - https://creativecommons.org/licenses/by/4.0/legalcode.txt
+%%%%
+
+\documentclass[letterpaper,10pt]{article}
+%%%%%%%%%%%%%%%%%%%%%%%
+%% BEGIN_FILE: mteck.sty
+%% NOTE: Everything between here and END_FILE can
+%% be relocated to "mteck.sty" and then included with:
+%\usepackage{mteck}
+
+% Dependencies
+% NOTE: Some packages (lastpage, hyperref) require second build!
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\usepackage{fontawesome5}
+\usepackage{multicol}
+\usepackage{bookmark}
+\usepackage{lastpage}
+
+% Sans-Serif
+%\usepackage[sfdefault]{FiraSans}
+%\usepackage[sfdefault]{roboto}
+%\usepackage[sfdefault]{noto-sans}
+%\usepackage[default]{sourcesanspro}
+
+% Serif
+\usepackage{CormorantGaramond}
+\usepackage{charter}
+
+% Colors
+% Use with \color{Name}
+% Can wrap entire heading with {\color{accent} [...] }
+\usepackage{xcolor}
+\definecolor{accentTitle}{HTML}{0e6e55}
+\definecolor{accentText}{HTML}{0e6e55}
+\definecolor{accentLine}{HTML}{a16f0b}
+
+% Misc. Options
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+\urlstyle{same}
+
+% Adjust Margins
+\addtolength{\oddsidemargin}{-0.7in}
+\addtolength{\evensidemargin}{-0.5in}
+\addtolength{\textwidth}{1.19in}
+\addtolength{\topmargin}{-0.7in}
+\addtolength{\textheight}{1.4in}
+
+\setlength{\multicolsep}{-3.0pt}
+\setlength{\columnsep}{-1pt}
+\setlength{\tabcolsep}{0pt}
+\setlength{\footskip}{3.7pt}
+\raggedbottom
+\raggedright
+
+% ATS Readability
+\input{glyphtounicode}
+\pdfgentounicode=1
+
+%-----------------%
+% Custom Commands %
+%-----------------%
+
+% Centered title along with subtitle between HR
+% Usage: \documentTitle{Name}{Details}
+\newcommand{\documentTitle}[2]{
+  \begin{center}
+    {\Huge\color{accentTitle} #1}
+    \vspace{10pt}
+    {\color{accentLine} \hrule}
+    \vspace{2pt}
+    %{\footnotesize\color{accentTitle} #2}
+    \footnotesize{#2}
+    \vspace{2pt}
+    {\color{accentLine} \hrule}
+  \end{center}
+}
+
+% Create a footer with correct padding
+% Usage: \documentFooter{\thepage of X}
+\newcommand{\documentFooter}[1]{
+  \setlength{\footskip}{10.25pt}
+  \fancyfoot[C]{\footnotesize #1}
+}
+
+% Simple wrapper to set up page numbering
+% Usage: \numberedPages
+% WARNING: Must run pdflatex twice!
+\newcommand{\numberedPages}{
+  \documentFooter{\thepage/\pageref{LastPage}}
+}
+
+% Section heading with horizontal rule
+% Usage: \section{Title}
+\titleformat{\section}{
+  \vspace{-5pt}
+  \color{accentText}
+  \raggedright\large\bfseries
+}{}{0em}{}[\color{accentLine}\titlerule]
+
+% Section heading with separator and content on same line
+% Usage: \tinysection{Title}
+\newcommand{\tinysection}[1]{
+  \phantomsection
+  \addcontentsline{toc}{section}{#1}
+  {\large{\bfseries\color{accentText}#1} {\color{accentLine} |}}
+}
+
+% Indented line with arguments left/right aligned in document
+% Usage: \heading{Left}{Right}
+\newcommand{\heading}[2]{
+  \hspace{10pt}#1\hfill#2\\
+}
+
+% Adds \textbf to \heading
+\newcommand{\headingBf}[2]{
+  \heading{\textbf{#1}}{\textbf{#2}}
+}
+
+% Adds \textit to \heading
+\newcommand{\headingIt}[2]{
+  \heading{\textit{#1}}{\textit{#2}}
+}
+
+% Template for itemized lists
+% Usage: \begin{resume_list} [items] \end{resume_list}
+\newenvironment{resume_list}{
+  \vspace{-7pt}
+  \begin{itemize}[itemsep=-2px, parsep=1pt, leftmargin=30pt]
+}{
+  \end{itemize}
+  %\vspace{-2pt}
+}
+
+% Formats an item to use as an itemized title
+% Usage: \itemTitle{Title}
+\newcommand{\itemTitle}[1]{
+  \item[] \underline{#1}\vspace{4pt}
+}
+
+% Bullets used in itemized lists
+\renewcommand\labelitemi{--}
+
+%% END_FILE: mteck.sty
+%%%%%%%%%%%%%%%%%%%%%%
+
+
+%===================%
+% John Doe's Resume %
+%===================%
+
+%\numberedPages % NOTE: lastpage requires a second build
+%\documentFooter{\thepage of 2} % Does similar without using lastpage
+\begin{document}
+
+  %---------%
+  % Heading %
+  %---------%
+
+  \documentTitle{John Doe}{
+    % Web Version
+    %\raisebox{-0.05\height} \faPhone\ [redacted - web copy] ~
+    %\raisebox{-0.15\height} \faEnvelope\ [redacted - web copy] ~
+    %%
+    \href{tel:1234567890}{
+      \raisebox{-0.05\height} \faPhone\ 123-456-7890} ~ | ~
+    \href{mailto:user@domain.tld}{
+      \raisebox{-0.15\height} \faEnvelope\ USER@domain.tld} ~ | ~
+    \href{https://linkedin.com/in/USER/}{
+      \raisebox{-0.15\height} \faLinkedin\ linkedin.com/in/USER} ~ | ~
+    \href{https://github.com/USER}{
+      \raisebox{-0.15\height} \faGithub\ github.com/USER}
+  }
+
+  %---------%
+  % Summary %
+  %---------%
+
+  \tinysection{Summary}
+  Simplified version of a monstrosity that I built back in college using current best practices.
+
+  %--------%
+  % Skills %
+  %--------%
+
+  \section{Skills}
+
+  \begin{multicols}{2}
+    \begin{itemize}[itemsep=-2px, parsep=1pt, leftmargin=75pt]
+      \item[\textbf{Automation}] SaltStack, Ansible, Chef, Puppet
+      \item[\textbf{Cloud}] Salt-Cloud, Linode, GCP, AWS
+      \item[\textbf{Languages}] Python, Bash, PHP, Perl, VB/C\#.Net
+      \item[\textbf{OS}] Debian, Ubuntu, CentOS, BSD, AIX
+      \item[\textbf{Policies}] CIS, SOC2, PCI-DSS, GDPR, ITIL
+      \item[\textbf{Testing}] Pytest, Docker, CircleCI, Jenkins, Inspec
+    \end{itemize}
+  \end{multicols}
+
+  %------------%
+  % Experience %
+  %------------%
+
+  \section{Experience}
+
+  \headingBf{Consulting Corp}{Jul 2015 -- Jun 2025}
+  \headingIt{Senior DevOps Engineer (FTE Consultant)}{}
+  \begin{resume_list}
+    \itemTitle{Client: Notable Placement}
+    \item Analyzed network traffic patterns to identify bottlenecks and optimize performance
+    \item Implemented firewall rules to enhance network security and prevent unauthorized access
+    \item Conducted regular vulnerability assessments and applied patches to secure systems
+    \item Collaborated with cross-functional teams to streamline IT processes and improve efficiency
+    \vspace{3pt}
+    \itemTitle{Client: Challenges Unlimited}
+    \item Configured monitoring tools to track system performance and troubleshoot issues proactively
+    \item Automated routine tasks using scripts to reduce manual effort and increase productivity
+    \item Documented system configurations and procedures for knowledge sharing within the team
+    \item Participated in disaster recovery planning and drills to ensure business continuity in case of emergencies
+    \vspace{3pt}
+    \itemTitle{Client: Broken Galleries}
+    \item Implemented cloud migration strategies to move applications to a hybrid environment
+    \item Optimized database performance through indexing and query tuning techniques
+    \item Conducted capacity planning and scalability assessments to support future growth
+    \item Provided on-call support for critical issues and worked on root cause analysis for incident resolution
+  \end{resume_list}
+
+  \headingBf{HealthCo Industries}{Feb 2011 -- Mar 2016}
+  \headingIt{Senior Systems Administrator (SRE)}{}
+  \begin{resume_list}
+    \item Managed virtualized server environment spanning multiple data centers
+    \item Oversaw migration of critical business applications to cloud-based platforms
+    \item Configured and monitored network security measures, including firewalls and intrusion detection systems
+    \item Implemented multi-factor authentication for remote access to company systems
+    \item Streamlined patch management process, reducing vulnerabilities and downtime
+    \item Conducted regular vulnerability assessments and penetration testing
+    \item Automated server provisioning and configuration management tasks
+    \item Maintained documentation for IT policies and procedures
+    \item Coordinated responses to cybersecurity incidents with internal teams and external vendors
+  \end{resume_list}
+
+  %-----------%
+  % Education %
+  %-----------%
+
+  \section{Education}
+
+  \headingBf{State University}{} % Note: Adding year(s) exposes an implied age
+  \headingIt{Bachelor of Science in Computer Information Systems}{}
+  \headingIt{Minors: Networking ; Network Security}{}
+
+  \vspace{5pt}
+  \headingBf{Certifications}{}
+  \begin{resume_list}
+    \item Salt \hspace{2pt}- SaltStack Certified Engineer
+    \item GCP - Professional Cloud Architect
+  \end{resume_list}
+
+  %----------------------------%
+  % Extracurricular Activities %
+  %----------------------------%
+
+  \section{Projects}
+
+  \headingBf{Hospital / Health Science IRB}{Mar 2015 -- Present}
+  \begin{resume_list}
+    \item Served as non-scientific/unaffiliated patient-representative
+    \item Reviewed patient consent forms for completeness, accuracy, and clarity
+    \item Became familiar with industry standards and regulations (OHRP, HIPAA)
+  \end{resume_list}
+
+  \headingBf{Debian Linux}{Jan 2001 -- Present}
+  \begin{resume_list}
+    \item Maintained packages in Debian repositories
+    \item Reviewed and sponsored packages on behalf of prospective Developers
+    \item Resolved bugs reported in bug tracking system
+  \end{resume_list}
+
+\end{document}

@@ -1,0 +1,266 @@
+\documentclass[letterpaper,10pt]{article}
+%%%%%%%%%%%%%%%%%%%%%%%
+%% BEGIN_FILE: mteck.sty
+%% NOTE: Everything between here and END_FILE can
+%% be relocated to "mteck.sty" and then included with:
+%\usepackage{mteck}
+
+% Dependencies
+% NOTE: Some packages (lastpage, hyperref) require second build!
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\usepackage{fontawesome5}
+\usepackage{multicol}
+\usepackage{bookmark}
+\usepackage{lastpage}
+
+% Sans-Serif
+%\usepackage[sfdefault]{FiraSans}
+%\usepackage[sfdefault]{roboto}
+%\usepackage[sfdefault]{noto-sans}
+%\usepackage[default]{sourcesanspro}
+
+% Serif
+\usepackage{CormorantGaramond}
+\usepackage{charter}
+
+% Colors
+% Use with \color{Name}
+% Can wrap entire heading with {\color{accent} [...] }
+\usepackage{xcolor}
+\definecolor{accentTitle}{HTML}{0e6e55}
+\definecolor{accentText}{HTML}{0e6e55}
+\definecolor{accentLine}{HTML}{a16f0b}
+
+% Misc. Options
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+\urlstyle{same}
+
+% Adjust Margins
+\addtolength{\oddsidemargin}{-0.7in}
+\addtolength{\evensidemargin}{-0.5in}
+\addtolength{\textwidth}{1.19in}
+\addtolength{\topmargin}{-0.7in}
+\addtolength{\textheight}{1.4in}
+
+\setlength{\multicolsep}{-3.0pt}
+\setlength{\columnsep}{-1pt}
+\setlength{\tabcolsep}{0pt}
+\setlength{\footskip}{3.7pt}
+\raggedbottom
+\raggedright
+
+% ATS Readability
+\input{glyphtounicode}
+\pdfgentounicode=1
+
+%-----------------%
+% Custom Commands %
+%-----------------%
+
+% Centered title along with subtitle between HR
+% Usage: \documentTitle{Name}{Details}
+\newcommand{\documentTitle}[2]{
+  \begin{center}
+    {\Huge\color{accentTitle} #1}
+    \vspace{10pt}
+    {\color{accentLine} \hrule}
+    \vspace{2pt}
+    %{\footnotesize\color{accentTitle} #2}
+    \footnotesize{#2}
+    \vspace{2pt}
+    {\color{accentLine} \hrule}
+  \end{center}
+}
+
+% Create a footer with correct padding
+% Usage: \documentFooter{\thepage of X}
+\newcommand{\documentFooter}[1]{
+  \setlength{\footskip}{10.25pt}
+  \fancyfoot[C]{\footnotesize #1}
+}
+
+% Simple wrapper to set up page numbering
+% Usage: \numberedPages
+% WARNING: Must run pdflatex twice!
+\newcommand{\numberedPages}{
+  \documentFooter{\thepage/\pageref{LastPage}}
+}
+
+% Section heading with horizontal rule
+% Usage: \section{Title}
+\titleformat{\section}{
+  \vspace{-5pt}
+  \color{accentText}
+  \raggedright\large\bfseries
+}{}{0em}{}[\color{accentLine}\titlerule]
+
+% Section heading with separator and content on same line
+% Usage: \tinysection{Title}
+\newcommand{\tinysection}[1]{
+  \phantomsection
+  \addcontentsline{toc}{section}{#1}
+  {\large{\bfseries\color{accentText}#1} {\color{accentLine} |}}
+}
+
+% Indented line with arguments left/right aligned in document
+% Usage: \heading{Left}{Right}
+\newcommand{\heading}[2]{
+  \hspace{10pt}#1\hfill#2\\
+}
+
+% Adds \textbf to \heading
+\newcommand{\headingBf}[2]{
+  \heading{\textbf{#1}}{\textbf{#2}}
+}
+
+% Adds \textit to \heading
+\newcommand{\headingIt}[2]{
+  \heading{\textit{#1}}{\textit{#2}}
+}
+
+% Template for itemized lists
+% Usage: \begin{resume_list} [items] \end{resume_list}
+\newenvironment{resume_list}{
+  \vspace{-7pt}
+  \begin{itemize}[itemsep=-2px, parsep=1pt, leftmargin=30pt]
+}{
+  \end{itemize}
+  %\vspace{-2pt}
+}
+
+% Formats an item to use as an itemized title
+% Usage: \itemTitle{Title}
+\newcommand{\itemTitle}[1]{
+  \item[] \underline{#1}\vspace{4pt}
+}
+
+% Bullets used in itemized lists
+\renewcommand\labelitemi{--}
+
+%% END_FILE: mteck.sty
+%%%%%%%%%%%%%%%%%%%%%%
+
+%===================%
+% John Doe's Resume %
+%===================%
+
+%\numberedPages % NOTE: lastpage requires a second build
+%\documentFooter{\thepage of 2} % Does similar without using lastpage
+\begin{document}
+
+  %---------%
+  % Heading %
+  %---------%
+
+  \documentTitle{Nareshbabu Nuli}{
+    \href{tel:+447867238237}{
+      \raisebox{-0.05\height} \faPhone\ +44 7867 238237} ~ | ~
+    \href{mailto:nareshbabunuliuk@gmail.com}{
+      \raisebox{-0.15\height} \faEnvelope\ nareshbabunuliuk@gmail.com} ~ | ~
+    \href{https://linkedin.com/in/LinkedIn Profile}{
+      \raisebox{-0.15\height} \faLinkedin\ linkedin.com/in/LinkedIn Profile} ~ | ~
+    \href{https://github.com/GitHub Profile}{
+      \raisebox{-0.15\height} \faGithub\ github.com/GitHub Profile}
+  }
+
+  %---------%
+  % Summary %
+  %---------%
+
+  \tinysection{Summary}
+  Full Stack PHP Developer with over 5 years of experience modernizing legacy systems and creating scalable, user-friendly web applications using Laravel, PHP, and MySQL. Skilled in leveraging the TALL stack (Tailwind CSS, Alpine.js, Laravel, Livewire) to build modern, reactive solutions. Proven ability to collaborate with stakeholders, translate business needs into technical solutions, and mentor development teams. Strong focus on enhancing system performance, security, and user engagement with robust experience in AWS cloud technologies, Linux/Unix server management, and DevOps practices.
+
+  %--------%
+  % Skills %
+  %--------%
+
+  \section{Skills}
+
+  \begin{multicols}{2}
+    \begin{itemize}[itemsep=-2px, parsep=1pt, leftmargin=75pt]
+      \item[\textbf{Languages \& Frameworks}] PHP, Laravel, Python, Django, JavaScript, React.js, Next.js
+      \item[\textbf{Full Stack Development}] Tailwind CSS, Alpine.js, Laravel, Livewire (TALL stack)
+      \item[\textbf{Databases}] MySQL, PostgreSQL, MongoDB
+      \item[\textbf{Cloud \& DevOps}] AWS (EC2, S3, Lambda), GCP, Azure; Docker, Kubernetes; CI/CD (Jenkins, GitHub Actions)
+      \item[\textbf{System Design}] Scalable Architecture, API Integration, Security
+      \item[\textbf{Development Practices}] Agile Methodologies, Test-Driven Development (TDD), Version Control (Git)
+    \end{itemize}
+  \end{multicols}
+
+  %------------%
+  % Experience %
+  %------------%
+
+  \section{Experience}
+
+  \headingBf{GRL Group of Companies SRL -- gowthamgroups.com}{May 2019 -- May 2022}
+  \headingIt{Full Stack Developer}{}
+  \begin{resume_list}
+    \item Migrated legacy applications to Django, reducing server latency by 40\% and improving scalability by 25\%.
+    \item Built secure, GDPR-compliant solutions using AWS EC2 and S3, ensuring 99.9\% uptime.
+    \item Mentored junior developers in TDD, achieving 95\% test coverage and reducing deployment issues by 40\%.
+    \item Delivered robust PHP solutions for data-heavy applications in alignment with operational goals.
+    \item Managed Linux-based servers, optimizing performance and ensuring robust security.
+  \end{resume_list}
+
+  \headingBf{Digital Log SRL -- Milan, Italy (digitallog.it)}{April 2018 -- April 2019}
+  \headingIt{Full Stack PHP Developer}{}
+  \begin{resume_list}
+    \item Converted legacy systems to Laravel, enhancing security and boosting user engagement by 30\%.
+    \item Developed scalable web applications using Laravel, reducing page load times by 30\%.
+    \item Designed and optimized RESTful APIs for seamless data integration, reducing downtime by 15\%.
+    \item Spearheaded UI/UX improvements with Tailwind CSS and Alpine.js, resulting in an 80\% increase in user engagement.
+    \item Streamlined deployment cycles with CI/CD pipelines using Jenkins and AWS CodePipeline.
+    \item Maintained and optimized Linux environments to support high-performance applications.
+  \end{resume_list}
+
+  \headingBf{Immobiliare SRL -- immobiliare.it}{June 2017 -- December 2017}
+  \headingIt{PHP Developer}{}
+  \begin{resume_list}
+    \item Modernized outdated PHP systems, significantly improving system security and maintainability.
+    \item Built dynamic back-end systems for real estate platforms handling 10K+ property listings.
+    \item Integrated the Google Maps API for enhanced property search functionality.
+    \item Implemented predictive analytics to optimize property demand forecasting by 20\%.
+  \end{resume_list}
+
+  %-----------%
+  % Education %
+  %-----------%
+
+  \section{Education}
+
+  \headingBf{University of Hertfordshire}{}
+  \headingIt{MSc in Computer Science (Distinction)}{}
+  \begin{resume_list}
+    \item Thesis: Music Playlist Recommendation System Using Bayesian Models
+    \item Achieved 85\% accuracy by analyzing user behavior patterns and comparing machine learning classifiers (Decision Trees, Gradient Boosting).
+    \item Relevant Coursework: Advanced Machine Learning, Cloud Architecture, System Design
+  \end{resume_list}
+
+  %----------------------------%
+  % Extracurricular Activities %
+  %----------------------------%
+
+  \section{Projects}
+
+  \headingBf{School Management System}{}
+  \begin{resume_list}
+    \item Developed a comprehensive management system automating key processes including student management, scheduling, fee tracking, and attendance monitoring.
+    \item Deployed on AWS EC2 for reliable and scalable operations.
+  \end{resume_list}
+
+  \headingBf{Furniture Online Shop with AR Features}{}
+  \begin{resume_list}
+    \item Created an e-commerce platform featuring augmented reality capabilities for immersive 3D product views.
+    \item Designed a mobile-optimized interface and deployed on Vercel for seamless performance.
+  \end{resume_list}
+
+\end{document}
