@@ -197,10 +197,10 @@ def send_to_overleaf(latex_code: str, project_name: str = "Generated Resume") ->
     """
     # Encode the LaTeX code in base64
     encoded_latex = base64.b64encode(latex_code.encode('utf-8')).decode('utf-8')
-    
+
     # Create the Overleaf URL with the base64 encoded content
     overleaf_url = f"https://www.overleaf.com/docs?snip_uri=data:application/x-tex;base64,{encoded_latex}"
-    
+
     print(f"[INFO] Generated Overleaf URL: {overleaf_url}")
     return overleaf_url
 
@@ -220,7 +220,7 @@ def save_latex_file(latex_code: str, output_tex: str = "resume.tex", send_to_ove
         f.write(latex_code)
 
     print(f"[INFO] LaTeX template saved to: {output_tex}")
-    
+
     print("\n[INFO] To convert to PDF using Overleaf:")
     print("1. Go to https://www.overleaf.com")
     print("2. Create a new project")
@@ -234,7 +234,7 @@ def main():
     # ------------------
     # 1) Configuration
     # ------------------
-    pdf_file = "upload/Nareshbabu Nuli.pdf"  # Path to your resume PDF
+    pdf_file = "upload/" + os.getenv("PDF_FILE_PATH")  # Path to your resume PDF
 
     # Get API key from environment variable for security
     api_key = os.getenv("MISTRAL_API_KEY")
@@ -292,7 +292,7 @@ def main():
         # 6) Save LaTeX file and optionally send to Overleaf
         # ---------------------------------
         saved_tex_file = save_latex_file(
-            final_latex, 
+            final_latex,
             output_tex=output_tex_filename,
             send_to_overleaf_flag=send_to_overleaf_flag
         )
