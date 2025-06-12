@@ -3,7 +3,6 @@ import json
 import PyPDF2
 from mistralai.client import MistralClient
 from mistralai.models.chat_completion import ChatMessage
-from dotenv import load_dotenv
 import requests
 import base64
 from flask import Flask, render_template, request, jsonify, send_file, flash, redirect, url_for
@@ -13,13 +12,14 @@ import uuid
 import threading
 import time
 
-# Load environment variables
-load_dotenv()
-
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # Required for flash messages
-app.config['UPLOAD_FOLDER'] = 'upload'
-app.config['OUTPUT_FOLDER'] = 'output' # New output folder
+
+# Use /tmp for file storage in Vercel environment
+TEMP_DIR = tempfile.gettempdir()
+app.config['UPLOAD_FOLDER'] = os.path.join(TEMP_DIR, 'upload_resumes')
+app.config['OUTPUT_FOLDER'] = os.path.join(TEMP_DIR, 'output_latex')
+
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
 # Ensure upload and output directories exist
@@ -32,22 +32,28 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def delete_old_files():
-    while True:
-        print("[INFO] Running scheduled file cleanup...")
-        for folder in [app.config['UPLOAD_FOLDER'], app.config['OUTPUT_FOLDER']]:
-            for filename in os.listdir(folder):
-                filepath = os.path.join(folder, filename)
-                if os.path.isfile(filepath):
-                    # Delete files older than 24 hours
-                    if (time.time() - os.path.getmtime(filepath)) > 24 * 3600:
-                        try:
-                            os.remove(filepath)
-                            print(f"[INFO] Deleted old file: {filepath}")
-                        except Exception as e:
-                            print(f"[ERROR] Error deleting file {filepath}: {e}")
-        time.sleep(24 * 3600) # Run every 24 hours
+    # This scheduled cleanup might not be effective in a serverless environment
+    # as instances are ephemeral. Consider other cleanup strategies if needed.
+    print("[INFO] Running scheduled file cleanup...")
+    for folder in [app.config['UPLOAD_FOLDER'], app.config['OUTPUT_FOLDER']]:
+        # Ensure the directory exists before listing to avoid errors
+        if not os.path.exists(folder):
+            os.makedirs(folder, exist_ok=True)
+            continue # Skip if just created, no files to delete yet
 
-# Start the cleanup thread
+        for filename in os.listdir(folder):
+            filepath = os.path.join(folder, filename)
+            if os.path.isfile(filepath):
+                # Delete files older than 24 hours
+                if (time.time() - os.path.getmtime(filepath)) > 24 * 3600:
+                    try:
+                        os.remove(filepath)
+                        print(f"[INFO] Deleted old file: {filepath}")
+                    except Exception as e:
+                        print(f"[ERROR] Error deleting file {filepath}: {e}")
+
+# The cleanup thread will run only as long as the serverless instance is active,
+# which might be very short. Manual deletion or re-uploading will handle most cases.
 cleanup_thread = threading.Thread(target=delete_old_files)
 cleanup_thread.daemon = True # Allows the main program to exit even if this thread is running
 cleanup_thread.start()
