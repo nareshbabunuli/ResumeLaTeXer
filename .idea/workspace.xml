@@ -4,10 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4ace1c34-860c-41d4-879e-53c8521f3fa1" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
-    </list>
+    <list default="true" id="4ace1c34-860c-41d4-879e-53c8521f3fa1" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -97,7 +94,7 @@
       <workItem from="1739795401465" duration="12245000" />
       <workItem from="1739811610460" duration="7740000" />
       <workItem from="1739822287290" duration="15545000" />
-      <workItem from="1749675290863" duration="13742000" />
+      <workItem from="1749675290863" duration="14050000" />
     </task>
     <servers />
   </component>
