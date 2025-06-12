@@ -3,11 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resume Processor</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <title>ResumeLaTeXer - Convert PDF Resumes to LaTeX</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Simple GitHub Button in Corner */
+        .github-corner-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #24292e; /* GitHub dark grey */
+            color: white;
+            padding: 14px 22px; /* Increased padding for more space */
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 16px;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap; /* Prevent text from wrapping */
+            transition: background-color 0.3s ease;
+        }
+
+        .github-corner-button:hover {
+            background-color: #000;
+        }
+    </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
+    <!-- GitHub Corner Button -->
+    <a href="https://github.com/nareshbabunuli/ResumeLaTeXer" class="github-corner-button" aria-label="View source on GitHub" target="_blank" rel="noopener noreferrer">
+        <i class="fab fa-github"></i>
+        Star on GitHub
+    </a>
+
+    <!-- Main Content -->
     <div class="container mx-auto px-4 py-8">
         <div class="max-w-4xl mx-auto">
             <h1 class="text-4xl font-bold text-center text-gray-800 mb-8">Resume Processor</h1>
